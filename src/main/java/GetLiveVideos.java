@@ -14,8 +14,6 @@ import java.util.List;
  * Created by trantuanan on 1/26/17.
  */
 public class GetLiveVideos {
-    private static final String url = "https://www.bigo.tv/openOfficialWeb/vedioList/5";
-
 
     public List<LiveVideo> getVideos(int scrollCount, String tabType) throws IOException, UnirestException {
         List<LiveVideo> result = new ArrayList<LiveVideo>();
@@ -33,7 +31,7 @@ public class GetLiveVideos {
     private LiveVideo[] getVideos(List<String> ignoreUids, String tabType) throws UnirestException, IOException {
         String editedIgnoreUids = prepareIgnoreUids(ignoreUids);
         System.out.println("Send request");
-        HttpResponse<JsonNode> httpResponse = Unirest.post(url)
+        HttpResponse<JsonNode> httpResponse = Unirest.post(RunClass.getDataUrl)
                 .header("X-Requested-With", "XMLHttpRequest")
                 .field("ignoreUids", editedIgnoreUids)
                 .field("tabType", tabType).asJson();

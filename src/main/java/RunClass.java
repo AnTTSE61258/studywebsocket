@@ -26,6 +26,7 @@ public class RunClass {
     public static Double userCountRate;
     public static Integer loopSetting;
     public static String tempLocation;
+    public static String getDataUrl;
 
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException, UnirestException {
         getParams();
@@ -42,7 +43,8 @@ public class RunClass {
             }
         }
     }
-    public static void getParams(){
+
+    public static void getParams() {
         Scanner sc = new Scanner(System.in);
         System.out.print("Tab type: (VN) ");
         tabType = sc.nextLine();
@@ -54,11 +56,18 @@ public class RunClass {
         sc.nextLine();
         System.out.print("Temp location: (bigoLiveTmp) ");
         tempLocation = sc.nextLine();
+        System.out.print("Get data url: (LIVE/GAME) ");
+        String tempUrl = sc.nextLine();
+        if (tempUrl.equals("GAME")) {
+            getDataUrl = "https://www.bigo.tv/openOfficialWeb/vedioList/11";
+        } else {
+            getDataUrl = "https://www.bigo.tv/openOfficialWeb/vedioList/5";
+        }
 
         System.out.println("===========================================================================================");
         System.out.println(String.format("Run get temp files with params: " +
-                        "\ntabType = %s \nuserCountRate = %s \nloopSetting = %s \ntempLocation:"
-                , tabType, userCountRate, loopSetting,tempLocation));
+                        "\ntabType = %s \nuserCountRate = %s \nloopSetting = %s \ntempLocation: %s \ngetDataUrl: %s "
+                , tabType, userCountRate, loopSetting, tempLocation, getDataUrl));
         System.out.println("=============================Press enter to start==========================================");
         sc.nextLine();
     }
@@ -103,11 +112,11 @@ public class RunClass {
     }
 
     public static File getInfoFile(String bigoId) {
-        return new File( tempLocation + "/" + bigoId + "/" + bigoId + ".json");
+        return new File(tempLocation + "/" + bigoId + "/" + bigoId + ".json");
     }
 
     public static File getDoneFile(String bigoId) {
-        return new File( tempLocation + "/" + bigoId + "/" + bigoId + ".done");
+        return new File(tempLocation + "/" + bigoId + "/" + bigoId + ".done");
     }
 
     public static File getMainDirectory() {
@@ -208,8 +217,8 @@ public class RunClass {
                         int availableBytes = dataInputStream.available();
                         byte[] temp = new byte[availableBytes];
                         dataInputStream.readFully(temp);
-                        if (availableBytes!=0){
-                            System.out.print(availableBytes + "..");
+                        if (availableBytes != 0) {
+                            System.out.print("..");
                         }
                         mainsource = org.apache.commons.lang.ArrayUtils.addAll(mainsource, temp);
                         if (temp.length > 0) {
@@ -224,8 +233,8 @@ public class RunClass {
                             String partFileName = getVideoFile(target) + "." + partFiles.size();
                             partFiles.add(partFileName);
                             FileUtils.writeByteArrayToFile(new File(partFileName), mainsource);
-                            System.out.println("Write to file. Size  = " + mainsource.length / (1000000)
-                                    + "MB. Target = " + target.getBigoID() + " PartID = " + partFiles.size());
+                            System.out.println("\n\n\nWrite to file. Size  = " + mainsource.length / (1000000)
+                                    + "MB. Target = " + target.getBigoID() + " PartID = " + partFiles.size() + "\n");
                             mainsource = new byte[0];
                         }
                     }
