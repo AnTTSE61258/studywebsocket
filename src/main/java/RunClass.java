@@ -25,6 +25,8 @@ public class RunClass {
     public static String tabType;
     public static Double userCountRate;
     public static Integer loopSetting;
+    public static String tempLocation;
+
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException, UnirestException {
         getParams();
         numberActiveThread = 0;
@@ -46,11 +48,19 @@ public class RunClass {
         tabType = sc.nextLine();
         System.out.print("User count rate: (1.5) ");
         userCountRate = sc.nextDouble();
+        sc.nextLine();
         System.out.print("Loop setting: (3) ");
         loopSetting = sc.nextInt();
+        sc.nextLine();
+        System.out.print("Temp location: (bigoLiveTmp) ");
+        tempLocation = sc.nextLine();
+
+        System.out.println("===========================================================================================");
         System.out.println(String.format("Run get temp files with params: " +
-                        "\ntabType = %s \nuserCountRate = %s \nloopSetting = %s"
-                , tabType, userCountRate, loopSetting));
+                        "\ntabType = %s \nuserCountRate = %s \nloopSetting = %s \ntempLocation:"
+                , tabType, userCountRate, loopSetting,tempLocation));
+        System.out.println("=============================Press enter to start==========================================");
+        sc.nextLine();
     }
 
     private static LiveVideo getTarget(List<LiveVideo> liveVideos, Double countRate) {
@@ -89,19 +99,19 @@ public class RunClass {
     public static File getVideoFile(LiveVideo liveVideo) {
         Date today = new Date();
         String sToday = DateFormatUtils.format(today, "dd-MM-yyyy");
-        return new File("bigoLiveTmp/" + liveVideo.getBigoID() + "/" + liveVideo.getNick_name() + " - live stream " + sToday + ".flv");
+        return new File(tempLocation + "/" + liveVideo.getBigoID() + "/" + liveVideo.getNick_name() + " - live stream " + sToday + ".flv");
     }
 
     public static File getInfoFile(String bigoId) {
-        return new File("bigoLiveTmp/" + bigoId + "/" + bigoId + ".json");
+        return new File( tempLocation + "/" + bigoId + "/" + bigoId + ".json");
     }
 
     public static File getDoneFile(String bigoId) {
-        return new File("bigoLiveTmp/" + bigoId + "/" + bigoId + ".done");
+        return new File( tempLocation + "/" + bigoId + "/" + bigoId + ".done");
     }
 
     public static File getMainDirectory() {
-        return new File("bigoLiveTmp");
+        return new File(tempLocation);
     }
 
     private static class ThreadGetLiveVideo extends Thread {
@@ -198,7 +208,9 @@ public class RunClass {
                         int availableBytes = dataInputStream.available();
                         byte[] temp = new byte[availableBytes];
                         dataInputStream.readFully(temp);
-                        System.out.print(availableBytes + "..");
+                        if (availableBytes!=0){
+                            System.out.print(availableBytes + "..");
+                        }
                         mainsource = org.apache.commons.lang.ArrayUtils.addAll(mainsource, temp);
                         if (temp.length > 0) {
                             lastTimeGetData = (new Date()).getTime();
@@ -216,8 +228,6 @@ public class RunClass {
                                     + "MB. Target = " + target.getBigoID() + " PartID = " + partFiles.size());
                             mainsource = new byte[0];
                         }
-
-                        Thread.sleep(1000);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
