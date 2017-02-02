@@ -31,6 +31,7 @@ public class CopyToMain {
     private JButton copyButton;
     private JButton btnPreview;
     private JButton saveButton;
+    private JButton btnDelete;
     private String[] formElements;
     private String[] toElements;
 
@@ -128,6 +129,20 @@ public class CopyToMain {
                 getInfo(txtToFolder.getText(),id);
 
 
+            }
+        });
+        btnDelete.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (selectedFolder == null){
+                    return;
+                }
+                try {
+                    FileUtils.deleteDirectory(selectedFolder);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                init();
             }
         });
     }
