@@ -11,15 +11,12 @@ import com.google.api.services.youtube.model.VideoStatus;
 import com.google.common.collect.Lists;
 import entity.LiveVideo;
 import org.apache.commons.io.FileUtils;
-import youtube.Auth;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Scanner;
 
 /**
  * Created by trantuanan on 1/27/17.
@@ -27,25 +24,41 @@ import java.util.List;
 public class UploadYouTube {
     private static YouTube youtube;
     private static final String VIDEO_FILE_FORMAT = "video/*";
-
+    public static String license = "";
+    public static FilenameFilter doneFileName = new FilenameFilter() {
+        public boolean accept(File dir, String name) {
+            if (name.contains(".done")) {
+                return true;
+            }
+            return false;
+        }
+    };
+    public static FilenameFilter flvFileName = new FilenameFilter() {
+        public boolean accept(File dir, String name) {
+            return name.contains(".flv");
+        }
+    };
+    public static FilenameFilter endWithFlvFileName = new FilenameFilter() {
+        public boolean accept(File dir, String name) {
+            return name.endsWith("flv");
+        }
+    };
     public static void main(String[] args) throws IOException {
-        FilenameFilter doneFileName = new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                if (name.contains(".done")) {
-                    return true;
-                }
-                return false;
-            }
-        };
-        FilenameFilter flvFileName = new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.contains(".flv");
-            }
-        };
-
+        String sMainDirectory;
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Upload Directory");
+        sMainDirectory = sc.nextLine();
+        System.out.print("License: ");
+        license = sc.nextLine();
 
         while (true) {
-            File mainDirectory = RunClass.getMainDirectory();
+            File mainDirectory = new File(sMainDirectory);
+            if (mainDirectory.exists()){
+                System.out.println("Directory " + mainDirectory.getName() + " is exist");
+            }else {
+                System.out.println("[ERROR]Directory " + mainDirectory.getName() + " is not exist");
+                break;
+            }
             if (mainDirectory.isDirectory()) {
                 File[] files = mainDirectory.listFiles();
                 System.out.println("Get list file from main directory. Size = " + files.length);
@@ -85,7 +98,7 @@ public class UploadYouTube {
             }
             try {
                 System.out.println("Sleeping...");
-                Thread.sleep(1 * 60 * 1000);
+                Thread.sleep(60 * 60 * 1000);
                 System.out.println("Awake....");
             } catch (InterruptedException e) {
                 e.printStackTrace();
