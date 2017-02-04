@@ -25,12 +25,12 @@ public class GetLiveVideos {
                 ignoreUids.add(item.getOwner());
             }
         }
+        System.out.println("Get list video. Result = " + result.size());
         return result;
     }
 
     private LiveVideo[] getVideos(List<String> ignoreUids, String tabType) throws UnirestException, IOException {
         String editedIgnoreUids = prepareIgnoreUids(ignoreUids);
-        System.out.println("Send request");
         HttpResponse<JsonNode> httpResponse = Unirest.post(RunClass.getDataUrl)
                 .header("X-Requested-With", "XMLHttpRequest")
                 .field("ignoreUids", editedIgnoreUids)
@@ -39,9 +39,7 @@ public class GetLiveVideos {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,true);
         String content = httpResponse.getBody().toString();
-        System.out.println("Receive response");
         LiveVideo[] liveVideos = objectMapper.readValue(content, LiveVideo[].class);
-        System.out.println("Parse successfully");
         return liveVideos;
     }
 

@@ -24,30 +24,26 @@ import java.util.concurrent.TimeUnit;
  * Created by trantuanan on 1/22/17.
  */
 public class RunClass {
-    public static int numberActiveThread = 0;
     // Configuration params
     public static String tabType;
     public static Double userCountRate;
     public static Integer loopSetting;
     public static String tempLocation;
     public static String getDataUrl;
+    public static String videoRotation;
     public static String sToday;
     public static GetLiveVideos getLiveVideos = new GetLiveVideos();
 
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException, UnirestException {
         sToday = DateFormatUtils.format(new Date(), "dd-MM-yyyy");
         getParams();
-        numberActiveThread = 0;
-        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1, 1, Long.MAX_VALUE, TimeUnit.NANOSECONDS, new LinkedBlockingQueue<Runnable>());
+        int gotVideos = 0;
         while (true) {
-            if (numberActiveThread > 0) {
-                Thread.sleep(10000);
-            } else {
-                ThreadGetLiveVideo threadGetLiveVideo = new ThreadGetLiveVideo(tabType, userCountRate, loopSetting);
-                threadPoolExecutor.execute(threadGetLiveVideo);
-                numberActiveThread++;
-                Thread.sleep(5000);
-            }
+            System.out.println("================== START TURN ==============");
+            ThreadGetLiveVideo threadGetLiveVideo = new ThreadGetLiveVideo(tabType, userCountRate, loopSetting);
+            threadGetLiveVideo.run();
+            gotVideos++;
+            System.out.println("==================END TURN==============. TOTAL = " + gotVideos);
         }
     }
 
@@ -70,12 +66,13 @@ public class RunClass {
         } else {
             getDataUrl = "https://www.bigo.tv/openOfficialWeb/vedioList/5";
         }
+        System.out.print("Rotation: (0:Default|1:90Degree|2:180Degree): ");
+        videoRotation = sc.nextLine();
 
-        System.out.println("===========================================================================================");
-        System.out.println(String.format("Run get temp files with params: " +
-                        "\ntabType = %s \nuserCountRate = %s \nloopSetting = %s \ntempLocation: %s \ngetDataUrl: %s "
+        System.out.println("\n\n\n\n\n\n\n\n======================================PARAM========================================");
+        System.out.println(String.format("\ntabType = %s \nuserCountRate = %s \nloopSetting = %s \ntempLocation: %s \ngetDataUrl: %s "
                 , tabType, userCountRate, loopSetting, tempLocation, getDataUrl));
-        System.out.println("=============================Press enter to start==========================================");
+        System.out.println("=============================Press enter to start= ==================================");
         sc.nextLine();
     }
 
@@ -113,11 +110,6 @@ public class RunClass {
     }
 
 
-
-    public static File getMainDirectory() {
-        return new File(tempLocation);
-    }
-
     private static class ThreadGetLiveVideo extends Thread {
         String tabType;
         Double userCountRate;
@@ -145,7 +137,7 @@ public class RunClass {
                     e.printStackTrace();
                 }
                 if (liveVideos == null) {
-                    System.out.println("video list is null. This case is rarely");
+                    System.out.println("[Error]. video list is empty. This case is rarely. Check connection");
                     return;
                 }
                 System.out.println("get list videos: " + liveVideos.size() + " Params: loopSetting = " + loopSetting);
@@ -160,10 +152,12 @@ public class RunClass {
                 // logic to get first
                 LiveVideo target = getTarget(liveVideos, userCountRate);
                 if (target == null) {
-                    System.out.println("target is null. STOP");
+                    System.out.println("Not found target. Waiting....30s");
+                    Thread.sleep(30 * 1000);
                     return;
                 } else {
-                    System.out.println("target is " + target.getBigoID() + " with user count =  " + target.getUser_count());
+                    System.out.println("Target found: " + target.getBigoID() + " with user count =  " + target.getUser_count());
+                    System.out.println("\n\n\n\n\n\n\n\n\n");
                 }
                 SocketAndPort socketAndPort = null;
                 try {
@@ -172,20 +166,17 @@ public class RunClass {
                     e.printStackTrace();
                 }
                 if (socketAndPort == null) {
-                    System.out.println("Socket and port is null. Shit happended");
+                    System.out.println("[Error] Socket and port null. Something went wrong");
                     return;
                 }
-                // Step 1. Connect to server
-                String serverIP = socketAndPort.getSocket();
-                int serverPort = socketAndPort.getPort();
                 int channel = (int) Long.parseLong(socketAndPort.getChannel());
                 long tmp = Long.parseLong(socketAndPort.getTmp());
                 DataInputStream dataInputStream = null;
                 Socket socket = null;
                 byte[] mainsource = new byte[0];
                 try {
-                    socket = new Socket(serverIP, serverPort);
-                    System.out.println("Connected to " + serverIP + ":" + serverPort);
+                    socket = new Socket(socketAndPort.getSocket(), socketAndPort.getPort());
+                    System.out.println("[OK] Connect to " + socketAndPort.getSocket() + ":" + socketAndPort.getPort());
                     DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
                     ByteBuffer byteBuffer = ByteBuffer.allocate(8);
                     byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -193,62 +184,30 @@ public class RunClass {
                     byteBuffer.putInt((int) tmp);
                     dataOutputStream.write(byteBuffer.array());
                     dataOutputStream.flush();
-                    System.out.println("Write out channel and tmp to server");
+                    System.out.println("[OK] Write out channel and tmp to server");
                     dataInputStream = new DataInputStream(socket.getInputStream());
                     boolean isNewRecord = true;
                     long lastTimeGetData = (new Date()).getTime();
-                    // Write into
                     final ObjectMapper objectMapper = new ObjectMapper();
                     String info = objectMapper.writeValueAsString(target);
                     FileUtils.writeStringToFile(Utils.getInfoFile(target.getBigoID()), info);
-                    // Read chat
+                    System.out.println("[OK] Write info to file");
+
+                    // [START] Read comments
                     if (socketAndPort.getWebsocket() != null) {
                         final WebSocketClientEndPoint clientEndPoint = new WebSocketClientEndPoint(new URI(socketAndPort.getWebsocket()));
                         clientEndPoint.addMessageHandler(new WebSocketClientEndPoint.MessageHandler() {
                             private Date startVideo = new Date();
 
                             public void handleMessage(String message) {
-                                try {
-                                    JsonNode jsonNode = objectMapper.readTree(message);
-                                    if (jsonNode == null) {
-                                        System.out.println("Error: " + message);
-                                        return;
-                                    }
-                                    JsonNode data = jsonNode.findValue("data");
-                                    if (data == null) {
-                                        return;
-                                    }
-                                    JsonNode cNode = jsonNode.findValue("c");
-                                    if (cNode==null||!cNode.asText().equals("1")){
-                                        return;
-                                    }
-
-
-                                    JsonNode nNode = data.findValue("n");
-                                    if (nNode == null) {
-                                        return;
-                                    }
-                                    JsonNode mNode = data.findValue("m");
-                                    if (mNode == null) {
-                                        return;
-                                    }
-
-                                    String messageContent = mNode.textValue();
-                                    if (messageContent != null && !messageContent.equals("")) {
-                                        Comment comment = new Comment(new Date().getTime() - startVideo.getTime(), messageContent);
-                                        comments.add(comment);
-                                    }
-
-                                } catch (IOException e) {
-                                    //e.printStackTrace();
-                                } catch (Exception e) {
-
+                                Comment comment = Utils.getComment(message, startVideo);
+                                if (comment != null) {
+                                    comments.add(comment);
                                 }
                             }
                         });
-
                     }
-
+                    // [END] Read comments
 
                     while (true) {
                         if (isNewRecord) {
@@ -261,18 +220,18 @@ public class RunClass {
                         dataInputStream.readFully(temp);
                         if (availableBytes != 0) {
                             if (mainsource.length == 0) {
-                                System.out.println();
-                                System.out.println();
+                                System.out.println("\n");
                             }
-                            System.out.print("." + availableBytes + ".");
+                            System.out.print(".[" + availableBytes + "].");
                         } else {
-                            System.out.println("Disconnected..");
+                            System.out.print(".[D].");
                         }
                         mainsource = org.apache.commons.lang.ArrayUtils.addAll(mainsource, temp);
+                        long now = new Date().getTime();
                         if (temp.length > 0) {
-                            lastTimeGetData = (new Date()).getTime();
+                            lastTimeGetData = now;
                         } else {
-                            if ((new Date()).getTime() - lastTimeGetData > 15 * 1000) { // 15 second
+                            if (now - lastTimeGetData > 15 * 1000) { // 15 second
                                 throw new Exception("timeout exception. Target = " + target.getBigoID());
                             }
                         }
@@ -290,7 +249,8 @@ public class RunClass {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    System.out.println("[NA] End videos with exception: " + e.getMessage());
+                    //e.printStackTrace();
                 } finally {
                     try {
                         socket.close();
@@ -302,14 +262,14 @@ public class RunClass {
                         String partFileName = Utils.getVideoFile(target) + "." + partFiles.size();
                         partFiles.add(partFileName);
                         FileUtils.writeByteArrayToFile(new File(partFileName), mainsource);
-                        System.out.println("Write to file. Size  = " + mainsource.length / (1000000) + "MB. Target = " + target.getBigoID());
+                        System.out.println("Write last part to file. Size  = " + mainsource.length / (1000000) + "MB. Target = " + target.getBigoID());
 
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
-                //Combine to 1 file
-                System.out.println("Combine to one file start");
+                // [START] Combine file
+
                 byte[] combineFile = new byte[0];
                 for (String s : partFiles) {
                     File f = new File(s);
@@ -319,24 +279,21 @@ public class RunClass {
                 }
 
                 FileUtils.writeByteArrayToFile(Utils.getVideoFile(target), combineFile);
-                // Combine file
+                // [END] Combine file
 
-                System.out.println("Combine file successfully. Size after combine = " + combineFile.length / (1000000) + "MB");
+                System.out.println("[OK] Combine file successfully. Size after combine = " + combineFile.length / (1000000) + "MB");
                 // Save sub files
-                System.out.println("Save subtitles");
                 String subTitle = Utils.convertToString(comments);
-                FileUtils.writeStringToFile(Utils.getSubtitleFile(target.getBigoID()),subTitle);
+                FileUtils.writeStringToFile(Utils.getSubtitleFile(target.getBigoID()), subTitle);
+                System.out.println("[OK] Write subtitle,srt successfullty" );
                 FileUtils.writeStringToFile(Utils.getDoneFile(target.getBigoID()), "done");
+                System.out.println("[OK] Write done file");
                 // Run with ffmpeg
+                System.out.println("[START] Re-touch video with JNI");
                 Utils.convertVideo(Utils.getVideoFile(target));
-
-
-                System.out.println("STOPPED. " + target.getBigoID());
-
+                System.out.println("[END] Re-touch video with JNI");
             } catch (Exception e) {
                 System.out.println("Error exception + " + e.getMessage());
-            } finally {
-                numberActiveThread--;
             }
         }
     }
