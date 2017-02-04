@@ -1,5 +1,8 @@
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import com.websocket.WebSocketClientEndPoint;
+import entity.Comment;
 import entity.LiveVideo;
 import entity.SocketAndPort;
 import org.apache.commons.io.FileUtils;
@@ -8,6 +11,7 @@ import org.apache.commons.lang.time.DateFormatUtils;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -27,8 +31,11 @@ public class RunClass {
     public static Integer loopSetting;
     public static String tempLocation;
     public static String getDataUrl;
+    public static String sToday;
+    public static GetLiveVideos getLiveVideos = new GetLiveVideos();
 
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException, UnirestException {
+        sToday = DateFormatUtils.format(new Date(), "dd-MM-yyyy");
         getParams();
         numberActiveThread = 0;
         ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1, 1, Long.MAX_VALUE, TimeUnit.NANOSECONDS, new LinkedBlockingQueue<Runnable>());
@@ -46,7 +53,7 @@ public class RunClass {
 
     public static void getParams() {
         Scanner sc = new Scanner(System.in);
-        System.out.print("Tab type: (VN) ");
+        System.out.print("Tab type: VN/10(LOL) ");
         tabType = sc.nextLine();
         System.out.print("User count rate: (1.5) ");
         userCountRate = sc.nextDouble();
@@ -54,7 +61,7 @@ public class RunClass {
         System.out.print("Loop setting: (3) ");
         loopSetting = sc.nextInt();
         sc.nextLine();
-        System.out.print("Temp location: (bigoLiveTmp) ");
+        System.out.print("Temp location: (bigoLiveTmp/bigoLolTmp) ");
         tempLocation = sc.nextLine();
         System.out.print("Get data url: (LIVE/GAME) ");
         String tempUrl = sc.nextLine();
@@ -83,7 +90,7 @@ public class RunClass {
         System.out.println("User count limit: " + tempSum / liveVideos.size() + " * " + countRate + " = " + userCountLimit);
 
         for (LiveVideo l : liveVideos) {
-            File f = getVideoFile(l);
+            File f = Utils.getVideoFile(l);
             if (!f.exists()) {
                 if (Integer.parseInt(l.getUser_count()) >= userCountLimit) {
                     if ((new Date()).getTime() / 1000 - l.getTime_stamp() < 10 * 60) {
@@ -105,19 +112,7 @@ public class RunClass {
         return null;
     }
 
-    public static File getVideoFile(LiveVideo liveVideo) {
-        Date today = new Date();
-        String sToday = DateFormatUtils.format(today, "dd-MM-yyyy");
-        return new File(tempLocation + "/" + liveVideo.getBigoID() + "/" + liveVideo.getNick_name() + " - live stream " + sToday + ".flv");
-    }
 
-    public static File getInfoFile(String bigoId) {
-        return new File(tempLocation + "/" + bigoId + "/" + bigoId + ".json");
-    }
-
-    public static File getDoneFile(String bigoId) {
-        return new File(tempLocation + "/" + bigoId + "/" + bigoId + ".done");
-    }
 
     public static File getMainDirectory() {
         return new File(tempLocation);
@@ -138,12 +133,12 @@ public class RunClass {
         @Override
         public void run() {
             try {
-
-                GetLiveVideos getLiveVideos = new GetLiveVideos();
+                final List<Comment> comments = new ArrayList<Comment>();
                 List<LiveVideo> liveVideos = null;
                 List<String> partFiles = new ArrayList<String>();
                 try {
                     liveVideos = (getLiveVideos.getVideos(loopSetting, tabType));
+                    sToday = DateFormatUtils.format(new Date(), "dd-MM-yyyy");
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (UnirestException e) {
@@ -203,22 +198,75 @@ public class RunClass {
                     boolean isNewRecord = true;
                     long lastTimeGetData = (new Date()).getTime();
                     // Write into
-                    ObjectMapper objectMapper = new ObjectMapper();
+                    final ObjectMapper objectMapper = new ObjectMapper();
                     String info = objectMapper.writeValueAsString(target);
-                    FileUtils.writeStringToFile(getInfoFile(target.getBigoID()), info);
+                    FileUtils.writeStringToFile(Utils.getInfoFile(target.getBigoID()), info);
+                    // Read chat
+                    if (socketAndPort.getWebsocket() != null) {
+                        final WebSocketClientEndPoint clientEndPoint = new WebSocketClientEndPoint(new URI(socketAndPort.getWebsocket()));
+                        clientEndPoint.addMessageHandler(new WebSocketClientEndPoint.MessageHandler() {
+                            private Date startVideo = new Date();
+
+                            public void handleMessage(String message) {
+                                try {
+                                    JsonNode jsonNode = objectMapper.readTree(message);
+                                    if (jsonNode == null) {
+                                        System.out.println("Error: " + message);
+                                        return;
+                                    }
+                                    JsonNode data = jsonNode.findValue("data");
+                                    if (data == null) {
+                                        return;
+                                    }
+                                    JsonNode cNode = jsonNode.findValue("c");
+                                    if (cNode==null||!cNode.asText().equals("1")){
+                                        return;
+                                    }
+
+
+                                    JsonNode nNode = data.findValue("n");
+                                    if (nNode == null) {
+                                        return;
+                                    }
+                                    JsonNode mNode = data.findValue("m");
+                                    if (mNode == null) {
+                                        return;
+                                    }
+
+                                    String messageContent = mNode.textValue();
+                                    if (messageContent != null && !messageContent.equals("")) {
+                                        Comment comment = new Comment(new Date().getTime() - startVideo.getTime(), messageContent);
+                                        comments.add(comment);
+                                    }
+
+                                } catch (IOException e) {
+                                    //e.printStackTrace();
+                                } catch (Exception e) {
+
+                                }
+                            }
+                        });
+
+                    }
 
 
                     while (true) {
                         if (isNewRecord) {
-                            FileUtils.writeByteArrayToFile(getVideoFile(target), mainsource);
-                            System.out.println("Write zero mock file");
+                            FileUtils.writeByteArrayToFile(Utils.getVideoFile(target), mainsource);
+                            System.out.println("Write zero mock file. Set start time");
                             isNewRecord = false;
                         }
                         int availableBytes = dataInputStream.available();
                         byte[] temp = new byte[availableBytes];
                         dataInputStream.readFully(temp);
                         if (availableBytes != 0) {
-                            System.out.print("..");
+                            if (mainsource.length == 0) {
+                                System.out.println();
+                                System.out.println();
+                            }
+                            System.out.print("." + availableBytes + ".");
+                        } else {
+                            System.out.println("Disconnected..");
                         }
                         mainsource = org.apache.commons.lang.ArrayUtils.addAll(mainsource, temp);
                         if (temp.length > 0) {
@@ -229,14 +277,15 @@ public class RunClass {
                             }
                         }
                         // Write main source to to file and remove it.
-                        if (mainsource.length > 3 * 1000 * 1000) {
-                            String partFileName = getVideoFile(target) + "." + partFiles.size();
+                        if (mainsource.length > 1 * 1000 * 1000) {
+                            String partFileName = Utils.getVideoFile(target) + "." + partFiles.size();
                             partFiles.add(partFileName);
                             FileUtils.writeByteArrayToFile(new File(partFileName), mainsource);
                             System.out.println("\n\n\nWrite to file. Size  = " + mainsource.length / (1000000)
                                     + "MB. Target = " + target.getBigoID() + " PartID = " + partFiles.size() + "\n");
                             mainsource = new byte[0];
                         }
+                        Thread.sleep(700);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -250,7 +299,7 @@ public class RunClass {
                         e.printStackTrace();
                     }
                     try {
-                        String partFileName = getVideoFile(target) + "." + partFiles.size();
+                        String partFileName = Utils.getVideoFile(target) + "." + partFiles.size();
                         partFiles.add(partFileName);
                         FileUtils.writeByteArrayToFile(new File(partFileName), mainsource);
                         System.out.println("Write to file. Size  = " + mainsource.length / (1000000) + "MB. Target = " + target.getBigoID());
@@ -269,12 +318,19 @@ public class RunClass {
                     f.delete();
                 }
 
-                FileUtils.writeByteArrayToFile(getVideoFile(target), combineFile);
-                System.out.println("Combine file successfully. Size after combine = " + combineFile.length / (1000000) + "MB");
-
-
-                FileUtils.writeStringToFile(getDoneFile(target.getBigoID()), "done");
+                FileUtils.writeByteArrayToFile(Utils.getVideoFile(target), combineFile);
                 // Combine file
+
+                System.out.println("Combine file successfully. Size after combine = " + combineFile.length / (1000000) + "MB");
+                // Save sub files
+                System.out.println("Save subtitles");
+                String subTitle = Utils.convertToString(comments);
+                FileUtils.writeStringToFile(Utils.getSubtitleFile(target.getBigoID()),subTitle);
+                FileUtils.writeStringToFile(Utils.getDoneFile(target.getBigoID()), "done");
+                // Run with ffmpeg
+                Utils.convertVideo(Utils.getVideoFile(target));
+
+
                 System.out.println("STOPPED. " + target.getBigoID());
 
             } catch (Exception e) {

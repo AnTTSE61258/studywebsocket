@@ -40,7 +40,19 @@ public class GetSocketAndPort {
         String channel = params.substring(params.indexOf("channel")+8,params.indexOf("srv")-1);
         String srv = params.substring(params.indexOf("srv")+4,params.indexOf("port")-1);
         String port = params.substring(params.indexOf("port")+5,params.length()-4);
+        Pattern websocketPattern = Pattern.compile("room_video_e\" chat-value=\".*\" ");
         SocketAndPort socketAndPort = new SocketAndPort(srv,tmp,channel,Integer.parseInt(port));
+        Matcher m2 = websocketPattern.matcher(content);
+        if (m2.find()){
+            String rawContent = m2.group();
+            String bigoRoomChatValueUrl = rawContent.substring(rawContent.indexOf("room_video_e\" chat-value=\"")+"room_video_e\" chat-value=\"".length(),rawContent.length()-2);
+            String[] arrUrl = bigoRoomChatValueUrl.split("/http:\\\\/\\/|\\:|\\/show|\\?");
+
+
+            String socketurl = "ws:"+arrUrl[1]+':'+arrUrl[2]+"/wsconnect?"+arrUrl[3];
+            socketAndPort.setWebsocket(socketurl);
+        }
+
         return socketAndPort;
 
 

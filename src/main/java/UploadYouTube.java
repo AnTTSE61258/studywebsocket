@@ -189,13 +189,13 @@ public class UploadYouTube {
             VideoSnippet snippet = new VideoSnippet();
 
             // This code uses a Calendar instance to create a unique name and
-            // description for test purposes so that you can easily upload
+            // description for TestConvertVideo purposes so that you can easily upload
             // multiple files. You should remove this code from your project
             // and use your own standard names instead.
             Calendar cal = Calendar.getInstance();
             snippet.setTitle(file.getName().substring(0, file.getName().length() - 4));
 
-            snippet.setDescription(file.getName().substring(0, file.getName().length() - 4)
+            snippet.setDescription("Hot bigo " + file.getName().substring(0, file.getName().length() - 4)
                     + ". Tổng hợp hot stream BIGO. Cập nhật liên tục. " + "\n -"
                     + extendDescription + "\n - Bigo ID: " + bigoId);
             if (file.getName().contains("ℕℂℂ")) {
@@ -204,10 +204,10 @@ public class UploadYouTube {
             }
             // Set the keyword tags that you want to associate with the video.
             List<String> tags = new ArrayList<String>();
-//            tags.add("bigo");
-//            tags.add("hot");
-//            tags.add("live");
-//            tags.add("show");
+            tags.add("bigo");
+            tags.add("hot");
+            tags.add("live");
+            tags.add("show");
             snippet.setTags(tags);
 
             // Add the completed snippet object to the video resource.
