@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -122,22 +123,35 @@ public class Utils {
         }
         File subtitle = new File(f.getParentFile().getCanonicalPath() + "/" + "subtitle.ass");
         System.out.println("[JNI] [END] convert subtitle. File status = " + subtitle.exists());
-        if (!subtitle.exists()) {
+        if (!subtitle.exists()&&subtitle.length()!=0) {
+            System.out.println("[ERROR] Have content bute can't convert");
             return;
+        }else {
+            //System.out.println("[NA] No subtitles");
         }
+        String ass="";
+        if (subtitle.exists()){
+            ass =  "ass=" + f.getParentFile().getCanonicalPath() + "/" + "subtitle.ass";
+
+        }
+
         String transponse;
         if (RunClass.videoRotation.equals("0")) {
             transponse = "";
         } else {
-            transponse = "transpose=" + RunClass.videoRotation + ", ";
+            transponse = "transpose=" + RunClass.videoRotation;
+            if (!ass.equals("")){
+                transponse = transponse + ", ";
+            }
         }
+
         String[] commandArray = new String[]{
                 "ffmpeg",
                 "-i",
                 f.getCanonicalPath(),
-                "-vf", transponse +
-
-                "ass=" + f.getParentFile().getCanonicalPath() + "/" + "subtitle.ass",
+                "-vf",
+                transponse +
+                ass,
                 "-y",//overwrite
                 "-q:v",// quaility
                 "10",
@@ -163,6 +177,7 @@ public class Utils {
         while ((s = stdError.readLine()) != null) {
             System.out.println(s);
         }
+        System.out.println(Arrays.toString(commandArray));
         System.out.println("[JNI][END] add subtitle, rotate, and convert to mp4");
     }
 
