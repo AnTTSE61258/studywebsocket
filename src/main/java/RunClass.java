@@ -132,9 +132,13 @@ public class RunClass {
                     liveVideos = (getLiveVideos.getVideos(loopSetting, tabType));
                     sToday = DateFormatUtils.format(new Date(), "dd-MM-yyyy");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
+                    System.out.println("[ERROR] Check connection");
+                    Thread.sleep(30*1000);
                 } catch (UnirestException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
+                    System.out.println("[ERROR] Check connection");
+                    Thread.sleep(30*1000);
                 }
                 if (liveVideos == null) {
                     System.out.println("[Error]. video list is empty. This case is rarely. Check connection");

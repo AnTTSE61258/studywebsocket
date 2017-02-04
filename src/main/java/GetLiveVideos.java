@@ -8,6 +8,7 @@ import entity.LiveVideo;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -20,6 +21,9 @@ public class GetLiveVideos {
         List<String> ignoreUids = new ArrayList<String>();
         for (int i = 0; i < scrollCount; i++) {
             LiveVideo[] liveVideos = getVideos(ignoreUids,tabType);
+            if (liveVideos==null){
+                continue;
+            }
             for (LiveVideo item: liveVideos) {
                 result.add(item);
                 ignoreUids.add(item.getOwner());
@@ -31,16 +35,21 @@ public class GetLiveVideos {
 
     private LiveVideo[] getVideos(List<String> ignoreUids, String tabType) throws UnirestException, IOException {
         String editedIgnoreUids = prepareIgnoreUids(ignoreUids);
-        HttpResponse<JsonNode> httpResponse = Unirest.post(RunClass.getDataUrl)
+        HttpResponse<String> httpResponse = Unirest.post(RunClass.getDataUrl)
                 .header("X-Requested-With", "XMLHttpRequest")
                 .field("ignoreUids", editedIgnoreUids)
-                .field("tabType", tabType).asJson();
+                .field("tabType", tabType).asString();
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,true);
         String content = httpResponse.getBody().toString();
-        LiveVideo[] liveVideos = objectMapper.readValue(content, LiveVideo[].class);
-        return liveVideos;
+        try {
+            LiveVideo[] liveVideos = objectMapper.readValue(content, LiveVideo[].class);
+            return liveVideos;
+        }catch (Exception e){
+            System.out.println("[Error] exception parse response. Content = " + content);
+        }
+        return new LiveVideo[0];
     }
 
     private String prepareIgnoreUids(List<String> raw){

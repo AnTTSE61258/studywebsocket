@@ -2,6 +2,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import entity.Comment;
 import entity.LiveVideo;
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 
 import java.io.BufferedReader;
@@ -124,14 +125,19 @@ public class Utils {
         if (!subtitle.exists()) {
             return;
         }
-
+        String transponse;
+        if (RunClass.videoRotation.equals("0")) {
+            transponse = "";
+        } else {
+            transponse = "transpose=" + RunClass.videoRotation + ", ";
+        }
         String[] commandArray = new String[]{
                 "ffmpeg",
                 "-i",
                 f.getCanonicalPath(),
-                "-vf",
-                "transpose=" + RunClass.videoRotation + ", " +
-                        "ass=" + f.getParentFile().getCanonicalPath() + "/" + "subtitle.ass",
+                "-vf", transponse +
+
+                "ass=" + f.getParentFile().getCanonicalPath() + "/" + "subtitle.ass",
                 "-y",//overwrite
                 "-q:v",// quaility
                 "10",
@@ -159,7 +165,8 @@ public class Utils {
         }
         System.out.println("[JNI][END] add subtitle, rotate, and convert to mp4");
     }
-    public static Comment getComment(String message, Date startVideo){
+
+    public static Comment getComment(String message, Date startVideo) {
 
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonNode = null;
@@ -191,8 +198,9 @@ public class Utils {
         if (mNode == null) {
             return null;
         }
-
-        String messageContent = mNode.textValue();
+        String name = nNode.textValue().substring(0, Math.min(nNode.textValue().length(), 10));
+        String threeDot = nNode.textValue().length() > 10 ? "..." : "";
+        String messageContent = name + threeDot + ":" + mNode.textValue();
         if (messageContent != null && !messageContent.equals("")) {
             Comment comment = new Comment(new Date().getTime() - startVideo.getTime(), messageContent);
             return comment;
@@ -221,4 +229,5 @@ public class Utils {
         return new File(RunClass.tempLocation);
     }
     //        Get file and Folder
+
 }
