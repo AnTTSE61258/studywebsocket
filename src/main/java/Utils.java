@@ -154,8 +154,8 @@ public class Utils {
                 ass,
                 "-y",//overwrite
                 "-q:v",// quaility
-                "10",
-                f.getParentFile().getCanonicalPath() + "/" + f.getName().substring(0, f.getName().lastIndexOf('.')) + ".mp4"
+                "18",
+                f.getParentFile().getCanonicalPath() + "/" + f.getName().substring(0, f.getName().lastIndexOf('.')) + "_p.flv"
         };
         System.out.println("[JNI][START] add subtitle, rotate, and convert to mp4");
         Process proc = rt.exec(commandArray);
@@ -188,7 +188,7 @@ public class Utils {
         try {
             jsonNode = objectMapper.readTree(message);
         } catch (IOException e) {
-            e.printStackTrace();
+           // e.printStackTrace();
             return null;
         }
         if (jsonNode == null) {
