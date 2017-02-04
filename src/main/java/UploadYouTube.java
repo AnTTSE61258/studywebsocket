@@ -75,6 +75,13 @@ public class UploadYouTube {
                                     if (uploadResult) {
                                         FileUtils.deleteDirectory(subFolder);
                                         System.out.println("Removed : " + subFolder.getName());
+                                        try {
+                                            System.out.println("Sleeping...");
+                                            Thread.sleep(30 * 60 * 1000);
+                                            System.out.println("Awake....");
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                        }
                                     } else {
                                         System.out.println("Upload failed: " + subFolder.getName());
                                     }
@@ -98,7 +105,7 @@ public class UploadYouTube {
             }
             try {
                 System.out.println("Sleeping...");
-                Thread.sleep(60 * 60 * 1000);
+                Thread.sleep(1 * 60 * 1000);
                 System.out.println("Awake....");
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -186,7 +193,7 @@ public class UploadYouTube {
             // multiple files. You should remove this code from your project
             // and use your own standard names instead.
             Calendar cal = Calendar.getInstance();
-            snippet.setTitle("Hot Bigo " + file.getName().substring(0, file.getName().length() - 4));
+            snippet.setTitle(file.getName().substring(0, file.getName().length() - 4));
 
             snippet.setDescription(file.getName().substring(0, file.getName().length() - 4)
                     + ". Tổng hợp hot stream BIGO. Cập nhật liên tục. " + "\n -"
