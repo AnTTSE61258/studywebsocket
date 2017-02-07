@@ -1,5 +1,7 @@
 import com.websocket.WebSocketClientEndPoint;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -7,19 +9,12 @@ import java.net.URISyntaxException;
  * Created by trantuanan on 2/4/17.
  */
 public class TestWebsocket {
-    public static void main(String[] args) throws URISyntaxException {
-        SocketReader socketReader = new SocketReader();
-        socketReader.setDaemon(true);
-        socketReader.start();
-        try {
-            if (1==2){
-                socketReader.interrupt();
-            }
-        }catch (Exception e){
-            System.out.println(e);
-        }
-        while (1==1){
-        }
+    public static void main(String[] args) throws URISyntaxException, IOException {
+        File f = new File("bigoLiveTmp/1/sizeStorer.wt");
+        String[] s = new String[]{f.getPath(),f.getPath() + "out"};
+        CombineFile.combineFiles(s);
+
+
 
     }
 

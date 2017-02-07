@@ -5,10 +5,7 @@ import entity.LiveVideo;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -76,13 +73,13 @@ public class Utils {
             timeFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             String sContent = c.getContent();
             int j = i;
-            while (comments.size() > j + 1 && comments.get(j + 1).getTime() - c.getTime() < 2000) {
+            while (comments.size() > j + 1 && comments.get(j + 1).getTime() - c.getTime() < 3000) {
                 sContent += "\n" + comments.get(j + 1).getContent();
                 i++;
                 j++;
             }
             if (i == j) {
-                endDate = new Date(c.getTime() + 2000);
+                endDate = new Date(c.getTime() + 3000);
             } else {
                 endDate = new Date(comments.get(j + 1).getTime());
             }
@@ -111,8 +108,9 @@ public class Utils {
         String[] convertSubtitle = new String[]{
                 "ffmpeg",
                 "-i",
-                f.getParentFile().getCanonicalPath() + "/" + "subtitle.srt",
-                f.getParentFile().getCanonicalPath() + "/" + "subtitle.ass"
+                f.getParentFile().getCanonicalPath() + "\\" + "subtitle.srt",
+                "-y",
+                f.getParentFile().getCanonicalPath() + "\\" + "subtitle.ass"
         };
         System.out.println("[JNI] [START] convert subtitle");
         Process convert = rt.exec(convertSubtitle);
@@ -123,27 +121,28 @@ public class Utils {
         }
         File subtitle = new File(f.getParentFile().getCanonicalPath() + "/" + "subtitle.ass");
         System.out.println("[JNI] [END] convert subtitle. File status = " + subtitle.exists());
-        if (!subtitle.exists()&&subtitle.length()!=0) {
+        if (!subtitle.exists() && subtitle.length() != 0) {
             System.out.println("[ERROR] Have content bute can't convert");
             return;
-        }else {
+        } else {
             //System.out.println("[NA] No subtitles");
         }
-        String ass="";
-        if (subtitle.exists()){
-            ass =  "ass=" + f.getParentFile().getCanonicalPath() + "/" + "subtitle.ass";
-
+        String ass = "";
+        if (subtitle.exists()) {
+            ass = "ass=" + f.getParentFile().getCanonicalPath() + "\\" + "subtitle.ass";
         }
 
+
         String transponse;
-        if (RunClass.videoRotation.equals("0")) {
+        if (RunClass.videoRotation == null || RunClass.videoRotation.equals("0")) {
             transponse = "";
         } else {
             transponse = "transpose=" + RunClass.videoRotation;
-            if (!ass.equals("")){
+            if (!ass.equals("")) {
                 transponse = transponse + ", ";
             }
         }
+
 
         String[] commandArray = new String[]{
                 "ffmpeg",
@@ -151,34 +150,40 @@ public class Utils {
                 f.getCanonicalPath(),
                 "-vf",
                 transponse +
-                ass,
+                        ass.replaceAll("\\\\","\\\\\\\\\\\\\\\\").replaceAll(":","\\\\\\\\:"),
                 "-y",//overwrite
                 "-q:v",// quaility
                 "18",
-                f.getParentFile().getCanonicalPath() + "/" + f.getName().substring(0, f.getName().lastIndexOf('.')) + "_p.flv"
+                f.getParentFile().getCanonicalPath() + "\\" + f.getName().substring(0, f.getName().lastIndexOf('.')) + "_p.flv"
         };
         System.out.println("[JNI][START] add subtitle, rotate, and convert to mp4");
-        Process proc = rt.exec(commandArray);
 
 
-        BufferedReader stdInput = new BufferedReader(new
-                InputStreamReader(proc.getInputStream()));
-
-        BufferedReader stdError = new BufferedReader(new
-                InputStreamReader(proc.getErrorStream()));
-
-        System.out.println("Result :\n");
-        String s = null;
-        while ((s = stdInput.readLine()) != null) {
-            System.out.println(s);
+        try
+        {
+            Process proc = rt.exec(commandArray);
+            InputStream stderr = proc.getErrorStream();
+            InputStreamReader isr = new InputStreamReader(stderr);
+            BufferedReader br = new BufferedReader(isr);
+            String line = null;
+            System.out.println("<ERROR>");
+            while ( (line = br.readLine()) != null)
+                System.out.println(line);
+            System.out.println("</ERROR>");
+            int exitVal = proc.waitFor();
+            System.out.println("Process exitValue: " + exitVal);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        System.out.println("Error :\n");
-        while ((s = stdError.readLine()) != null) {
-            System.out.println(s);
-        }
+
         System.out.println(Arrays.toString(commandArray));
         System.out.println("[JNI][END] add subtitle, rotate, and convert to mp4");
+    }
+
+    public static String execCmd(String[] cmd) throws java.io.IOException {
+        java.util.Scanner s = new java.util.Scanner(Runtime.getRuntime().exec(cmd).getInputStream()).useDelimiter("\\A");
+        return s.hasNext() ? s.next() : "";
     }
 
     public static Comment getComment(String message, Date startVideo) {
@@ -188,7 +193,7 @@ public class Utils {
         try {
             jsonNode = objectMapper.readTree(message);
         } catch (IOException e) {
-           // e.printStackTrace();
+            // e.printStackTrace();
             return null;
         }
         if (jsonNode == null) {

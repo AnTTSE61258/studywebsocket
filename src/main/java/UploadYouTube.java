@@ -38,24 +38,48 @@ public class UploadYouTube {
             return name.contains(".flv");
         }
     };
+    public static FilenameFilter pflvFileName = new FilenameFilter() {
+        public boolean accept(File dir, String name) {
+            return name.endsWith("_p.flv");
+        }
+    };
     public static FilenameFilter endWithFlvFileName = new FilenameFilter() {
         public boolean accept(File dir, String name) {
             return name.endsWith("flv");
         }
     };
+
     public static void main(String[] args) throws IOException {
         String sMainDirectory;
+        String titleFormat;
+        String descriptionFormat;
+        String tag;
         Scanner sc = new Scanner(System.in);
         System.out.print("Upload Directory");
         sMainDirectory = sc.nextLine();
         System.out.print("License: ");
         license = sc.nextLine();
+        System.out.print("Title format: (Hot bigo with comments)");
+        titleFormat = sc.nextLine();
+        System.out.print("Description format: (hot bigo)");
+        descriptionFormat = sc.nextLine();
+        System.out.print("Tag: (bigo, hot)");
+        tag = sc.nextLine();
+        System.out.println("\n\n\n\n\n\n\n\n\n");
+        System.out.println("=================PARAM============");
+        System.out.println("Upload directory = " + sMainDirectory);
+        System.out.println("License = " + license);
+        System.out.println("Title format = " + titleFormat);
+        System.out.println("Description format = " + descriptionFormat);
+        System.out.println("Tag = " + tag);
+        System.out.println("===================Press any key to continue===========");
+        sc.nextLine();
 
         while (true) {
             File mainDirectory = new File(sMainDirectory);
-            if (mainDirectory.exists()){
+            if (mainDirectory.exists()) {
                 System.out.println("Directory " + mainDirectory.getName() + " is exist");
-            }else {
+            } else {
                 System.out.println("[ERROR]Directory " + mainDirectory.getName() + " is not exist");
                 break;
             }
@@ -68,10 +92,10 @@ public class UploadYouTube {
                         File[] doneFile = subFolder.listFiles(doneFileName);
                         // if have done file then find flv file
                         if (doneFile.length == 1) {
-                            File[] flvFile = subFolder.listFiles(flvFileName);
+                            File[] flvFile = subFolder.listFiles(pflvFileName);
                             if (flvFile.length == 1) {
-                                if (flvFile[0].getName().endsWith(".flv")) {
-                                    boolean uploadResult = uploadToYoutube(subFolder);
+                                if (flvFile[0].getName().endsWith("_p.flv")) {
+                                    boolean uploadResult = uploadToYoutube(subFolder, titleFormat, descriptionFormat, tag);
                                     if (uploadResult) {
                                         FileUtils.deleteDirectory(subFolder);
                                         System.out.println("Removed : " + subFolder.getName());
@@ -113,7 +137,7 @@ public class UploadYouTube {
         }
     }
 
-    public static boolean uploadToYoutube(File subFolder) {
+    public static boolean uploadToYoutube(File subFolder, String titleFormat, String descriptionFormat, String tag) {
         // This OAuth 2.0 access scope allows an application to upload files
         // to the authenticated user's YouTube channel, but doesn't allow
         // other types of access.
@@ -126,18 +150,13 @@ public class UploadYouTube {
                 return false;
             }
         };
-        FilenameFilter flvFileName = new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.contains(".flv");
-            }
-        };
 
         FilenameFilter jsonFileName = new FilenameFilter() {
             public boolean accept(File dir, String name) {
                 return name.contains(".json");
             }
         };
-        File[] flvFile = subFolder.listFiles(flvFileName);
+        File[] flvFile = subFolder.listFiles(pflvFileName);
         File[] jsonFile = subFolder.listFiles(jsonFileName);
         String extendDescription = "";
         String bigoId = "Not found";
@@ -193,21 +212,17 @@ public class UploadYouTube {
             // multiple files. You should remove this code from your project
             // and use your own standard names instead.
             Calendar cal = Calendar.getInstance();
-            snippet.setTitle(file.getName().substring(0, file.getName().length() - 4));
+            snippet.setTitle(titleFormat + " " + file.getName().substring(0, file.getName().length() - 6));
 
-            snippet.setDescription("Hot bigo " + file.getName().substring(0, file.getName().length() - 4)
-                    + ". Tổng hợp hot stream BIGO. Cập nhật liên tục. " + "\n -"
+            snippet.setDescription(descriptionFormat + " " + file.getName().substring(0, file.getName().length() - 6)
+                    + ".\n Tổng hợp hot stream BIGO. Cập nhật liên tục. Có comment đi kèm " + "\n -"
                     + extendDescription + "\n - Bigo ID: " + bigoId);
-            if (file.getName().contains("ℕℂℂ")) {
-                System.out.println("Shit NCC");
-                return false;
-            }
             // Set the keyword tags that you want to associate with the video.
             List<String> tags = new ArrayList<String>();
-            tags.add("bigo");
-            tags.add("hot");
-            tags.add("live");
-            tags.add("show");
+            String[] tagsString = tag.split(",");
+            for (String t : tagsString) {
+                tags.add(t.trim());
+            }
             snippet.setTags(tags);
 
             // Add the completed snippet object to the video resource.

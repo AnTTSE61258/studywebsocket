@@ -6,6 +6,7 @@ import entity.Comment;
 import entity.LiveVideo;
 import entity.SocketAndPort;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 
@@ -248,7 +249,7 @@ public class RunClass {
                                     + "MB. Target = " + target.getBigoID() + " PartID = " + partFiles.size() + "\n");
                             mainsource = new byte[0];
                         }
-                        Thread.sleep(700);
+                        Thread.sleep(30);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -274,18 +275,22 @@ public class RunClass {
                 }
                 // [START] Combine file
 
-                byte[] combineFile = new byte[0];
-                for (String s : partFiles) {
+                partFiles.add(Utils.getVideoFile(target).getPath());
+                String[] partFileArray = new String[partFiles.size()];
+                partFileArray = partFiles.toArray(partFileArray);
+                CombineFile.combineFiles(partFileArray);
+                partFileArray[partFileArray.length-1] = null;
+                for (String s : partFileArray) {
+                    if (s == null){
+                        continue;
+                    }
                     File f = new File(s);
-                    byte[] partBytes = FileUtils.readFileToByteArray(f);
-                    combineFile = org.apache.commons.lang.ArrayUtils.addAll(combineFile, partBytes);
                     f.delete();
                 }
 
-                FileUtils.writeByteArrayToFile(Utils.getVideoFile(target), combineFile);
                 // [END] Combine file
 
-                System.out.println("[OK] Combine file successfully. Size after combine = " + combineFile.length / (1000000) + "MB");
+                System.out.println("[OK] Combine file successfully. Size after combine = " + Utils.getVideoFile(target).length() / (1000000) + "MB");
                 // Save sub files
                 String subTitle = Utils.convertToString(comments);
                 FileUtils.writeStringToFile(Utils.getSubtitleFile(target.getBigoID()), subTitle);
@@ -297,6 +302,7 @@ public class RunClass {
                 Utils.convertVideo(Utils.getVideoFile(target));
                 System.out.println("[END] Re-touch video with JNI");
             } catch (Exception e) {
+                e.printStackTrace();
                 System.out.println("Error exception + " + e.getMessage());
             }
         }
