@@ -101,7 +101,7 @@ public class UploadYouTube {
                                         System.out.println("Removed : " + subFolder.getName());
                                         try {
                                             System.out.println("Sleeping...");
-                                            Thread.sleep(30 * 60 * 1000);
+                                            Thread.sleep(5 * 60 * 1000);
                                             System.out.println("Awake....");
                                         } catch (InterruptedException e) {
                                             e.printStackTrace();
@@ -215,7 +215,7 @@ public class UploadYouTube {
             snippet.setTitle(titleFormat + " " + file.getName().substring(0, file.getName().length() - 6));
 
             snippet.setDescription(descriptionFormat + " " + file.getName().substring(0, file.getName().length() - 6)
-                    + ".\n Tổng hợp hot stream BIGO. Cập nhật liên tục. Có comment đi kèm " + "\n -"
+                    +"\n"
                     + extendDescription + "\n - Bigo ID: " + bigoId);
             // Set the keyword tags that you want to associate with the video.
             List<String> tags = new ArrayList<String>();

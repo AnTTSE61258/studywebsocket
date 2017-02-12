@@ -33,6 +33,7 @@ public class RunClass {
     public static String getDataUrl;
     public static String videoRotation;
     public static String sToday;
+    public static int secondThreshold;
     public static GetLiveVideos getLiveVideos = new GetLiveVideos();
 
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException, UnirestException {
@@ -41,7 +42,7 @@ public class RunClass {
         int gotVideos = 0;
         while (true) {
             System.out.println("================== START TURN ==============");
-            ThreadGetLiveVideo threadGetLiveVideo = new ThreadGetLiveVideo(tabType, userCountRate, loopSetting);
+            ThreadGetLiveVideo threadGetLiveVideo = new ThreadGetLiveVideo(tabType, userCountRate, loopSetting,secondThreshold);
             threadGetLiveVideo.run();
             gotVideos++;
             System.out.println("==================END TURN==============. TOTAL = " + gotVideos);
@@ -69,15 +70,17 @@ public class RunClass {
         }
         System.out.print("Rotation: (0:Default|1:90Degree|2:180Degree): ");
         videoRotation = sc.nextLine();
+        System.out.println("Threshold: (1) ");
+        secondThreshold = sc.nextInt();
 
         System.out.println("\n\n\n\n\n\n\n\n======================================PARAM========================================");
-        System.out.println(String.format("\ntabType = %s \nuserCountRate = %s \nloopSetting = %s \ntempLocation: %s \ngetDataUrl: %s "
-                , tabType, userCountRate, loopSetting, tempLocation, getDataUrl));
+        System.out.println(String.format("\ntabType = %s \nuserCountRate = %s \nloopSetting = %s \ntempLocation: %s \ngetDataUrl: %s \n Second threshold: %s"
+                , tabType, userCountRate, loopSetting, tempLocation, getDataUrl,secondThreshold));
         System.out.println("=============================Press enter to start= ==================================");
         sc.nextLine();
     }
 
-    private static LiveVideo getTarget(List<LiveVideo> liveVideos, Double countRate) {
+    private static LiveVideo getTarget(List<LiveVideo> liveVideos, Double countRate, int secondThreshold) {
         int userCountLimit;
         int tempSum = 0;
         for (LiveVideo l : liveVideos) {
@@ -91,7 +94,7 @@ public class RunClass {
             File f = Utils.getVideoFile(l);
             if (!f.exists()) {
                 if (Integer.parseInt(l.getUser_count()) >= userCountLimit) {
-                    if ((new Date()).getTime() / 1000 - l.getTime_stamp() < 10 * 60) {
+                    if ((new Date()).getTime() / 1000 - l.getTime_stamp() < secondThreshold * 60) {
                         return l;
                     } else {
                         if (Integer.parseInt(l.getUser_count()) / userCountLimit > 1.5) {
@@ -115,11 +118,13 @@ public class RunClass {
         String tabType;
         Double userCountRate;
         int loopSetting;
+        int secondThreshold;
 
-        public ThreadGetLiveVideo(String tabType, Double userCountRate, int loopSetting) {
+        public ThreadGetLiveVideo(String tabType, Double userCountRate, int loopSetting, int secondThreshold) {
             this.tabType = tabType;
             this.userCountRate = userCountRate;
             this.loopSetting = loopSetting;
+            this.secondThreshold = secondThreshold;
         }
 
 
@@ -155,7 +160,7 @@ public class RunClass {
                 });
 
                 // logic to get first
-                LiveVideo target = getTarget(liveVideos, userCountRate);
+                LiveVideo target = getTarget(liveVideos, userCountRate, secondThreshold);
                 if (target == null) {
                     System.out.println("Not found target. Waiting....30s");
                     Thread.sleep(30 * 1000);
