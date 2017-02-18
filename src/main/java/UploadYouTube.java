@@ -76,64 +76,70 @@ public class UploadYouTube {
         sc.nextLine();
 
         while (true) {
-            File mainDirectory = new File(sMainDirectory);
-            if (mainDirectory.exists()) {
-                System.out.println("Directory " + mainDirectory.getName() + " is exist");
-            } else {
-                System.out.println("[ERROR]Directory " + mainDirectory.getName() + " is not exist");
-                break;
-            }
-            if (mainDirectory.isDirectory()) {
-                File[] files = mainDirectory.listFiles();
-                System.out.println("Get list file from main directory. Size = " + files.length);
-                for (File subFolder : files) {
-                    if (subFolder.isDirectory()) {
-                        System.out.println("Check folder " + subFolder.getName());
-                        File[] doneFile = subFolder.listFiles(doneFileName);
-                        // if have done file then find flv file
-                        if (doneFile.length == 1) {
-                            File[] flvFile = subFolder.listFiles(pflvFileName);
-                            if (flvFile.length == 1) {
-                                if (flvFile[0].getName().endsWith("_p.flv")) {
-                                    boolean uploadResult = uploadToYoutube(subFolder, titleFormat, descriptionFormat, tag);
-                                    if (uploadResult) {
-                                        FileUtils.deleteDirectory(subFolder);
-                                        System.out.println("Removed : " + subFolder.getName());
-                                        try {
-                                            System.out.println("Sleeping...");
-                                            Thread.sleep(5 * 60 * 1000);
-                                            System.out.println("Awake....");
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
+            try {
+                File mainDirectory = new File(sMainDirectory);
+                if (mainDirectory.exists()) {
+                    System.out.println("Directory " + mainDirectory.getName() + " is exist");
+                } else {
+                    System.out.println("[ERROR]Directory " + mainDirectory.getName() + " is not exist");
+                    break;
+                }
+                if (mainDirectory.isDirectory()) {
+                    File[] files = mainDirectory.listFiles();
+                    System.out.println("Get list file from main directory. Size = " + files.length);
+                    for (File subFolder : files) {
+                        if (subFolder.isDirectory()) {
+                            System.out.println("Check folder " + subFolder.getName());
+                            File[] doneFile = subFolder.listFiles(doneFileName);
+                            // if have done file then find flv file
+                            if (doneFile.length == 1) {
+                                File[] flvFile = subFolder.listFiles(pflvFileName);
+                                if (flvFile.length == 1) {
+                                    if (flvFile[0].getName().endsWith("_p.flv")) {
+                                        boolean uploadResult = uploadToYoutube(subFolder, titleFormat, descriptionFormat, tag);
+                                        if (uploadResult) {
+                                            FileUtils.deleteDirectory(subFolder);
+                                            System.out.println("Removed : " + subFolder.getName());
+                                            try {
+                                                System.out.println("Sleeping...");
+                                                Thread.sleep(5 * 60 * 1000);
+                                                System.out.println("Awake....");
+                                            } catch (InterruptedException e) {
+                                                e.printStackTrace();
+                                            }
+                                        } else {
+                                            System.out.println("Upload failed: " + subFolder.getName());
                                         }
                                     } else {
-                                        System.out.println("Upload failed: " + subFolder.getName());
+                                        System.out.println("One file but not main. Shit happend");
                                     }
                                 } else {
-                                    System.out.println("One file but not main. Shit happend");
+                                    System.out.println("Error. Find flv file for ID = "
+                                            + subFolder.getName() + ". Size = " + flvFile.length);
                                 }
                             } else {
-                                System.out.println("Error. Find flv file for ID = "
-                                        + subFolder.getName() + ". Size = " + flvFile.length);
-                            }
-                        } else {
-                            if (doneFile.length == 0) {
-                                System.out.println("Video ID = " + subFolder + " still streaming");
-                            } else {
-                                System.out.println("There are many done file. Shit happend");
+                                if (doneFile.length == 0) {
+                                    System.out.println("Video ID = " + subFolder + " still streaming");
+                                } else {
+                                    System.out.println("There are many done file. Shit happend");
+                                }
                             }
                         }
                     }
-                }
 
-            }
-            try {
-                System.out.println("Sleeping...");
-                Thread.sleep(1 * 60 * 1000);
-                System.out.println("Awake....");
-            } catch (InterruptedException e) {
+                }
+                try {
+                    System.out.println("Sleeping...");
+                    Thread.sleep(1 * 60 * 1000);
+                    System.out.println("Awake....");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } catch (Exception e) {
+                System.out.println("[ERROR] BIG ERROR");
                 e.printStackTrace();
             }
+
         }
     }
 
@@ -215,7 +221,7 @@ public class UploadYouTube {
             snippet.setTitle(titleFormat + " " + file.getName().substring(0, file.getName().length() - 6));
 
             snippet.setDescription(descriptionFormat + " " + file.getName().substring(0, file.getName().length() - 6)
-                    +"\n"
+                    + "\n"
                     + extendDescription + "\n - Bigo ID: " + bigoId);
             // Set the keyword tags that you want to associate with the video.
             List<String> tags = new ArrayList<String>();

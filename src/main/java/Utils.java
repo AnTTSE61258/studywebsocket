@@ -233,6 +233,10 @@ public class Utils {
         return new File(RunClass.tempLocation + "/" + liveVideo.getBigoID() + "/" + liveVideo.getNick_name() + " - live stream " + RunClass.sToday + ".flv");
     }
 
+    public static File getVideoFolder(LiveVideo liveVideo){
+        return new File(RunClass.tempLocation + "/" + liveVideo.getBigoID());
+    }
+
     public static File getInfoFile(String bigoId) {
         return new File(RunClass.tempLocation + "/" + bigoId + "/" + bigoId + ".json");
     }

@@ -1,4 +1,3 @@
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.websocket.WebSocketClientEndPoint;
@@ -6,8 +5,6 @@ import entity.Comment;
 import entity.LiveVideo;
 import entity.SocketAndPort;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 
 import java.io.*;
@@ -17,9 +14,6 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by trantuanan on 1/22/17.
@@ -91,7 +85,7 @@ public class RunClass {
         System.out.println("User count limit: " + tempSum / liveVideos.size() + " * " + countRate + " = " + userCountLimit);
 
         for (LiveVideo l : liveVideos) {
-            File f = Utils.getVideoFile(l);
+            File f = Utils.getVideoFolder(l);
             if (!f.exists()) {
                 if (Integer.parseInt(l.getUser_count()) >= userCountLimit) {
                     if ((new Date()).getTime() / 1000 - l.getTime_stamp() < secondThreshold * 60) {
@@ -300,12 +294,12 @@ public class RunClass {
                 String subTitle = Utils.convertToString(comments);
                 FileUtils.writeStringToFile(Utils.getSubtitleFile(target.getBigoID()), subTitle);
                 System.out.println("[OK] Write subtitle,srt successfullty" );
-                FileUtils.writeStringToFile(Utils.getDoneFile(target.getBigoID()), "done");
-                System.out.println("[OK] Write done file");
                 // Run with ffmpeg
                 System.out.println("[START] Re-touch video with JNI");
                 Utils.convertVideo(Utils.getVideoFile(target));
                 System.out.println("[END] Re-touch video with JNI");
+                FileUtils.writeStringToFile(Utils.getDoneFile(target.getBigoID()), "done");
+                System.out.println("[OK] Write done file");
             } catch (Exception e) {
                 e.printStackTrace();
                 System.out.println("Error exception + " + e.getMessage());
